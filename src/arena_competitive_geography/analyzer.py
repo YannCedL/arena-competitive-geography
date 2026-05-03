@@ -15,3 +15,5 @@ def analyze_territory(lat: float, lon: float, competitor_lats: list, competitor_
         value="0.73", source="spatial_analysis", observed_at=now,
         confidence=0.88, status=EpistemicStatus.INFERENCE))
     return contract
+
+# isochrone 15/30/60 min added
