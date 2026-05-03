@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/arena_competitive_geography/__init__.py
+src/arena_competitive_geography/analyzer.py
+src/arena_competitive_geography.egg-info/PKG-INFO
+src/arena_competitive_geography.egg-info/SOURCES.txt
+src/arena_competitive_geography.egg-info/dependency_links.txt
+src/arena_competitive_geography.egg-info/requires.txt
+src/arena_competitive_geography.egg-info/top_level.txt
+tests/test_territory.py
