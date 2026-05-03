@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARENA — Competitive Geography & Territory Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(18, 26, 43, 0.85);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-color: #ec4899;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            background-image: radial-gradient(circle at 10% 10%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo { display: flex; align-items: center; gap: 0.75rem; }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+        }
+
+        .logo-title { font-size: 1.3rem; font-weight: 700; }
+        .logo-subtitle { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
+        .map-wrapper {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            min-height: 500px;
+        }
+
+        #map { width: 100%; height: 100%; min-height: 500px; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .info-label { color: var(--text-muted); }
+        .info-val { font-weight: 600; text-align: right; }
+
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(236, 72, 153, 0.15);
+            color: #f472b6;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">⚔️</div>
+            <div>
+                <div class="logo-title">ARENA</div>
+                <div class="logo-subtitle">Géographie Concurrentielle & Emprise Territoriale</div>
+            </div>
+        </div>
+        <div class="badge">COMPETITIVE MAP ENGINE</div>
+    </header>
+
+    <div class="layout">
+        <div class="map-wrapper">
+            <div id="map"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Dominance du Territoire</div>
+            <div class="info-row"><span class="info-label">Indice de Dominance</span><span class="info-val" id="aDom" style="color:#f472b6;">-</span></div>
+            <div class="info-row"><span class="info-label">Concurrents Détectés</span><span class="info-val" id="aComp">-</span></div>
+            <div class="info-row"><span class="info-label">Plus Proche Concurrent</span><span class="info-val" id="aDist">-</span></div>
+            <div class="info-row"><span class="info-label">Aire d'Influence</span><span class="info-val" id="aArea">-</span></div>
+        </div>
+    </div>
+
+    <script>
+        let map = L.map('map').setView([48.8566, 2.3522], 13);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            attribution: 'Arena Competitive Engine'
+        }).addTo(map);
+
+        async function analyserTerritoire() {
+            try {
+                const response = await fetch('/api/v1/territory?lat=48.8566&lon=2.3522');
+                const contract = await response.json();
+                const r = contract.result;
+
+                document.getElementById('aDom').textContent = `${(r.territory_dominance_index * 100).toFixed(0)}%`;
+                document.getElementById('aComp').textContent = r.competitors_count || 0;
+                document.getElementById('aDist').textContent = `${r.nearest_competitor_distance_km} km`;
+                document.getElementById('aArea').textContent = `${r.market_influence_area_km2} km²`;
+
+                // Site principal (Rose)
+                L.circleMarker([r.center[0], r.center[1]], {
+                    radius: 12, fillColor: '#ec4899', color: '#ffffff', weight: 2, fillOpacity: 0.9
+                }).addTo(map).bindPopup('<strong>Notre Site Stratégique</strong>').openPopup();
+
+                // Zone d'influence (cercle rose)
+                L.circle([r.center[0], r.center[1]], {
+                    radius: 3000, color: '#ec4899', fillColor: '#ec4899', fillOpacity: 0.15
+                }).addTo(map);
+
+            } catch (err) {
+                console.error("Erreur lors de l'analyse Arena.");
+            }
+        }
+
+        window.onload = analyserTerritoire;
+    </script>
+</body>
+</html>
